@@ -3,6 +3,7 @@ import { _keyMap, _modifier, _downKeys, modifierMap, _mods, _handlers } from './
 
 
 let _scope = 'all'; // 默认热键范围
+let _id = 0;
 let isBindElement = false; // 是否绑定节点
 
 // 返回键码
@@ -78,6 +79,7 @@ function unbind(key, scope, method) {
   let keys;
   let mods = [];
   let obj;
+  var id = -1;
   // 通过函数判断，是否解除绑定
   // https://github.com/jaywcjlove/hotkeys/issues/44
   if (typeof scope === 'function') {
@@ -85,6 +87,11 @@ function unbind(key, scope, method) {
     scope = 'all';
   }
 
+  if (typeof scope === 'number') {
+    id = scope;
+    scope = 'all';
+  }
+  
   for (let i = 0; i < multipleKeys.length; i++) {
     // 将组合快捷键拆分为数组
     keys = multipleKeys[i].split('+');
@@ -105,14 +112,14 @@ function unbind(key, scope, method) {
     // 清空 handlers 中数据，
     // 让触发快捷键键之后没有事件执行到达解除快捷键绑定的目的
     for (let r = 0; r < _handlers[key].length; r++) {
+      let cntinue = true;
       obj = _handlers[key][r];
       // 通过函数判断，是否解除绑定，函数相等直接返回
-      if (method && obj.method !== method) return;
+      if (method && obj.method !== method) cntinue = false;
+
+      if (-1 != id && obj.id !== id) cntinue = false;
       // 判断是否在范围内并且键值相同
-      if (
-        obj.scope === scope &&
-        compareArray(obj.mods, mods)
-      ) {
+      if (cntinue && obj.scope === scope && compareArray(obj.mods, mods)) {
         _handlers[key][r] = {};
       }
     }
@@ -245,6 +252,7 @@ function hotkeys(key, option, method) {
       shortcut: keys[i],
       method,
       key: keys[i],
+      id:_id
     });
   }
   // 在全局document上设置快捷键
@@ -257,6 +265,8 @@ function hotkeys(key, option, method) {
       clearModifier(e);
     });
   }
+  
+  return _id++;
 }
 
 const _api = {
